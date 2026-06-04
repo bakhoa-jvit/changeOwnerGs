@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drive Ownership Transfer Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#0d1117; --surface:#161b22; --surface2:#1c2128; --surface3:#21262d;
+      --border:#30363d; --border-subtle:#21262d; --primary:#1a73e8; --primary-hover:#1557b0;
+      --primary-glow:rgba(26,115,232,.2); --success:#2ea043; --success-light:rgba(46,160,67,.15);
+      --error:#f85149; --error-light:rgba(248,81,73,.12); --warning:#d29922; --warning-light:rgba(210,153,34,.12);
+      --text:#e6edf3; --text-2:#8b949e; --text-3:#484f58; --radius:8px;
+      --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; --mono:'JetBrains Mono','Fira Code',monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+    header{display:flex;align-items:center;gap:14px;padding:14px 24px;background:var(--surface);border-bottom:1px solid var(--border-subtle);flex-shrink:0}
+    .header-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#1a73e8 0%,#0d47a1 100%);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 2px 8px rgba(26,115,232,.4)}
+    .header-text h1{font-size:15px;font-weight:600;letter-spacing:-.01em}.header-text p{font-size:12px;color:var(--text-2);margin-top:1px}
+    main{flex:1;display:grid;grid-template-columns:340px 1fr;overflow:hidden}
+    .panel-left{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}
+    .panel-left::-webkit-scrollbar{width:4px}.panel-left::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    .section{padding:20px 20px 0}.section:last-child{padding-bottom:20px}
+    .section-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-subtle)}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}.field:last-child{margin-bottom:0}
+    .field label{font-size:12px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:6px}
+    .badge{font-size:10px;font-weight:500;color:var(--text-2);background:var(--surface3);padding:1px 6px;border-radius:20px;border:1px solid var(--border)}
+    input[type=text],input[type=email]{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-size:13px;font-family:var(--font);color:var(--text);transition:border-color .15s,box-shadow .15s;outline:none;width:100%}
+    input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}input::placeholder{color:var(--text-3)}input:disabled{opacity:.5;cursor:not-allowed}
+    .field-hint,.hint{font-size:11px;color:var(--text-2);line-height:1.5}.field-hint code{font-family:var(--mono);font-size:10px;background:var(--surface2);border:1px solid var(--border-subtle);padding:1px 5px;border-radius:4px;color:#79c0ff}
+    .sep{height:1px;background:var(--border-subtle);margin:4px 20px 16px;flex-shrink:0}
+    .workflow-note{display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius)}
+    .workflow-note strong{font-size:13px;font-weight:500;display:block}.workflow-note small{font-size:11px;color:var(--text-2);line-height:1.5}
+    .check{display:flex;align-items:flex-start;gap:8px;margin:0;color:var(--text-2);font-size:12px;line-height:1.5}.check input{width:auto;margin-top:2px}
+    #errorBanner{display:none;margin:0 20px 16px;padding:10px 14px;background:var(--error-light);border:1px solid rgba(248,81,73,.4);border-radius:var(--radius);font-size:12px;color:var(--error);line-height:1.5}
+    .btn-group{display:flex;flex-direction:column;gap:8px}.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:var(--radius);font-size:13px;font-weight:500;font-family:var(--font);cursor:pointer;border:none;transition:all .15s;letter-spacing:-.01em}
+    .btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}.btn.loading{opacity:.85}.btn-spinner{width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:none;animation:spin .7s linear infinite;flex-shrink:0}.btn.loading .btn-spinner{display:inline-block}.btn.loading svg{display:none}@keyframes spin{to{transform:rotate(360deg)}}
+    .btn-primary{background:var(--primary);color:#fff;box-shadow:0 1px 0 rgba(0,0,0,.1),inset 0 1px 0 rgba(255,255,255,.08)}.btn-primary:hover:not(:disabled){background:var(--primary-hover);box-shadow:0 4px 12px rgba(26,115,232,.35);transform:translateY(-1px)}
+    .btn-danger{background:transparent;color:var(--error);border:1px solid rgba(248,81,73,.5)}.btn-danger:hover:not(:disabled){background:var(--error-light);border-color:var(--error)}
+    .btn-ghost{background:var(--surface2);color:var(--text-2);border:1px solid var(--border)}.btn-ghost:hover:not(:disabled){background:var(--surface3);color:var(--text)}
+    .btn-reset{margin-top:8px;color:var(--warning);border-color:rgba(210,153,34,.42);background:rgba(210,153,34,.07)}
+    .footnote{padding:16px 20px;border-top:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:5px;margin-top:auto}.footnote-item{font-size:11px;color:var(--text-3);display:flex;align-items:center;gap:6px}
+    .panel-right{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+    .status-bar{display:flex;align-items:center;gap:10px;padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border-subtle);flex-shrink:0}
+    .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--text-3)}.status-dot.starting{background:var(--primary);animation:blink .8s ease-in-out infinite}.status-dot.running{background:var(--primary);animation:pulse-ring 1.5s ease-in-out infinite}.status-dot.confirm,.status-dot.paused{background:var(--warning)}.status-dot.done{background:var(--success)}.status-dot.error{background:var(--error)}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(26,115,232,.6)}70%{box-shadow:0 0 0 5px rgba(26,115,232,0)}100%{box-shadow:0 0 0 0 rgba(26,115,232,0)}}
+    .status-main{font-size:13px;font-weight:500}.status-sub{font-size:12px;color:var(--text-2);margin-left:auto;font-variant-numeric:tabular-nums}
+    .stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;padding:16px 24px;border-bottom:1px solid var(--border-subtle);flex-shrink:0}
+    .stat-card{background:var(--surface);border:1px solid var(--border-subtle);border-radius:var(--radius);padding:14px 16px;transition:border-color .25s,transform .1s;position:relative;overflow:hidden}.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;opacity:0;transition:opacity .3s}.stat-card.active{transform:translateY(-1px)}.stat-card.active::before{opacity:1}.stat-card.scanned::before,.stat-card.eligible::before{background:var(--primary)}.stat-card.owned::before,.stat-card.sent::before,.stat-card.done-count::before{background:var(--success)}.stat-card.failed::before{background:var(--error)}
+    .stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:4px}.stat-value{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1}.stat-card.scanned .stat-value,.stat-card.eligible .stat-value{color:var(--primary)}.stat-card.owned .stat-value,.stat-card.sent .stat-value,.stat-card.done-count .stat-value{color:var(--success)}.stat-card.failed.active .stat-value{color:var(--error)}
+    .log-header{display:flex;align-items:center;padding:10px 24px 6px;flex-shrink:0}.log-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3)}.log-actions{margin-left:auto;display:flex;gap:6px}.log-btn{font-size:11px;color:var(--text-2);background:none;border:1px solid transparent;border-radius:5px;padding:3px 8px;cursor:pointer;font-family:var(--font);transition:all .15s}.log-btn:hover{background:var(--surface);border-color:var(--border);color:var(--text)}
+    #logBox{flex:1;overflow-y:auto;padding:8px 24px 20px;font-family:var(--mono);font-size:11.5px;line-height:1.8}#logBox::-webkit-scrollbar{width:5px}#logBox::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+    .log-empty{font-family:var(--font);font-size:13px;color:var(--text-3);text-align:center;padding:48px 0}.log-empty span{display:block;font-size:28px;margin-bottom:8px}
+    .log-line{display:block;padding:0;color:var(--text-2);white-space:pre-wrap;word-break:break-word;animation:fadeIn .15s ease}@keyframes fadeIn{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:translateY(0)}}
+    .log-line.ok{color:#57ab5a;font-weight:500}.log-line.err{color:#f85149}.log-line.warn{color:var(--warning)}.log-line.eligible{color:#79c0ff;font-weight:600}.log-line.eligible::before{content:"READY ";color:var(--success);font-weight:700}.log-line.done{color:var(--success);font-weight:600}.log-line.scan{color:#a5d6ff}.log-line.sep{color:var(--text-3)}.log-line.system{color:var(--text-2)}
+    @media(max-width:900px){body{overflow:auto}main{grid-template-columns:1fr;height:auto}.panel-right{min-height:70vh}.stats-row{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-icon">↪</div>
+    <div class="header-text">
+      <h1>Drive Ownership Transfer Tool</h1>
+      <p>Chuyển owner Google Drive theo đệ quy — có checkpoint và resume</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel-left">
+      <div class="section" style="padding-top:20px;">
+        <div class="section-label">Cấu hình</div>
+        <div class="field">
+          <label for="newOwnerEmail">Email owner mới</label>
+          <input type="email" id="newOwnerEmail" placeholder="new_owner@gmail.com">
+        </div>
+        <div class="field">
+          <label for="folderId">Folder ID <span class="badge">từ URL Drive</span></label>
+          <input type="text" id="folderId" placeholder="1AbCdEfGhIjKlMnOpQrStUvWxYz">
+          <div class="field-hint">Mở folder → copy phần cuối URL:<br><code>.../folders/<strong>ID_Ở_ĐÂY</strong></code></div>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="section">
+        <div class="section-label">Quy trình</div>
+        <div class="workflow-note">
+          <strong>Quét rồi xác nhận</strong>
+          <small>Tool quét toàn bộ cây folder, lưu checkpoint khi gần timeout, rồi chờ bạn xác nhận trước khi gửi yêu cầu owner.</small>
+        </div>
+        <div style="height:10px"></div>
+        <label class="check">
+          <input type="checkbox" id="directTransfer">
+          <span>Transfer trực tiếp. Chỉ bật khi cả hai tài khoản là Google Workspace cùng tổ chức/domain.</span>
+        </label>
+        <div style="height:10px"></div>
+        <div class="workflow-note">
+          <strong>Gmail/consumer</strong>
+          <small>Tool chỉ tạo pending owner. Người nhận có thể không nhận email và cần mở link file/folder, vào Chia sẻ, rồi chấp nhận lời mời sở hữu cho từng item.</small>
+        </div>
+      </div>
+
+      <div id="errorBanner"></div>
+      <div class="sep"></div>
+      <div class="section">
+        <div class="section-label">Hành động</div>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btnStart" onclick="handleStart()">
+            <span class="btn-spinner"></span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2.75A.75.75 0 0 1 4.5 2l9 5.25a.75.75 0 0 1 0 1.5L4.5 14A.75.75 0 0 1 3 13.25v-10.5z"/></svg>
+            Quét owner
+          </button>
+          <button class="btn btn-primary" id="btnConfirm" onclick="handleConfirm()" disabled>
+            <span class="btn-spinner"></span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg>
+            Xác nhận chuyển owner
+          </button>
+          <button class="btn btn-danger" id="btnPause" onclick="handlePauseOrContinue()" disabled data-mode="pause">
+            <span class="btn-spinner"></span>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4.25 2A1.25 1.25 0 0 0 3 3.25v9.5A1.25 1.25 0 0 0 4.25 14h1.5A1.25 1.25 0 0 0 7 12.75v-9.5A1.25 1.25 0 0 0 5.75 2h-1.5Zm6 0A1.25 1.25 0 0 0 9 3.25v9.5A1.25 1.25 0 0 0 10.25 14h1.5A1.25 1.25 0 0 0 13 12.75v-9.5A1.25 1.25 0 0 0 11.75 2h-1.5Z"/></svg>
+            <span id="pauseButtonText">Ngưng</span>
+          </button>
+          <button class="btn btn-ghost btn-reset" id="btnReset" onclick="handleReset()">
+            <span class="btn-spinner"></span>
+            Xóa checkpoint
+          </button>
+        </div>
+      </div>
+
+      <div class="footnote">
+        <div class="footnote-item">• Cần bật Advanced service Drive API.</div>
+        <div class="footnote-item">• Shared drives không hỗ trợ chuyển owner kiểu này.</div>
+      </div>
+    </div>
+
+    <div class="panel-right">
+      <div class="status-bar">
+        <span id="statusDot" class="status-dot idle"></span>
+        <span id="statusText" class="status-main">Sẵn sàng</span>
+        <span id="statusSub" class="status-sub"></span>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card scanned" id="cardScanned"><div class="stat-label">Đã quét</div><div class="stat-value" id="statScanned">0</div></div>
+        <div class="stat-card owned" id="cardOwned"><div class="stat-label">Bạn sở hữu</div><div class="stat-value" id="statOwned">0</div></div>
+        <div class="stat-card eligible" id="cardEligible"><div class="stat-label">Có thể xử lý</div><div class="stat-value" id="statEligible">0</div></div>
+        <div class="stat-card done-count" id="cardPending"><div class="stat-label">Đã pending</div><div class="stat-value" id="statPending">0</div></div>
+        <div class="stat-card sent" id="cardRequested"><div class="stat-label">Đã yêu cầu</div><div class="stat-value" id="statRequested">0</div></div>
+        <div class="stat-card failed" id="cardFailed"><div class="stat-label">Lỗi</div><div class="stat-value" id="statFailed">0</div></div>
+      </div>
+
+      <div class="log-header">
+        <div class="log-title">Nhật ký</div>
+        <div class="log-actions"><button class="log-btn" id="btnAutoScroll" onclick="toggleAutoScroll()">↓ Auto-scroll</button></div>
+      </div>
+      <div id="logBox"><div class="log-empty" id="logEmpty"><span>↪</span>Nhập cấu hình ← và bấm Quét owner</div></div>
+    </div>
+  </main>
+
+  <script>
+    var pollTimer=null,lastLogLen=0,lastLogCursor=0,isRunning=false,autoScroll=true,lastProgressUpdatedAt='',activeJobId='',resumeTimer=null,workerInFlight=false,pollInFlight=false,actionInFlight=false,loadingButtonId='',confirmReady=false,checkpointContinueReady=false;
+
+    function handleStart(){
+      var email=document.getElementById('newOwnerEmail').value.trim();
+      var folderId=document.getElementById('folderId').value.trim();
+      var direct=document.getElementById('directTransfer').checked;
+      showError('');
+      if(!email||email.indexOf('@')===-1){showError('Vui lòng nhập email owner mới hợp lệ.');return}
+      if(!folderId){showError('Vui lòng nhập Folder ID.');return}
+      setActionInFlight(true,'btnStart'); if(resumeTimer){clearTimeout(resumeTimer);resumeTimer=null}
+      workerInFlight=false; pollInFlight=false; clearLog(); lastProgressUpdatedAt=''; activeJobId='';
+      updateStats({scanned:0,owned:0,eligible:0,pending:0,transferred:0,requested:0,failed:0});
+      setStatus('starting','Đang kết nối...'); setRunning(true); setConfirmReady(false); setCheckpointContinueReady(false);
+      addLocalLog('▶ Chế độ: ' + (direct?'TRANSFER TRỰC TIẾP':'GỬI PENDING OWNER'), 'system');
+      addLocalLog('Email owner mới: '+email,'system'); addLocalLog('Folder: '+folderId,'system');
+      google.script.run.withSuccessHandler(function(res){
+        setActionInFlight(false); if(res&&res.jobId)activeJobId=res.jobId;
+        if(res&&res.resumed)addLocalLog('▶ Phát hiện checkpoint cũ cùng Email + Folder ID, tiếp tục từ lần chạy trước...','sep');
+        setStatus('running','Đang khởi động...'); startPolling(); kickWorker();
+      }).withFailureHandler(function(err){
+        setActionInFlight(false); setStatus('error','Có lỗi xảy ra'); setRunning(false); showError(err.message||String(err)); addLocalLog('✗ '+(err.message||err),'err');
+      }).startOwnershipTransfer(email,folderId,direct);
+    }
+
+    function handleConfirm(){
+      showError(''); setActionInFlight(true,'btnConfirm'); setRunning(true,false); setConfirmReady(false); setCheckpointContinueReady(false); setPauseButtonMode('pause',true); setStatus('starting','Đang xác nhận...');
+      addLocalLog('▶ Xác nhận xử lý các mục đang chờ...','warn');
+      google.script.run.withSuccessHandler(function(){
+        setActionInFlight(false); setStatus('running','Đang xử lý owner...'); startPolling(); kickWorker();
+      }).withFailureHandler(function(err){
+        setActionInFlight(false); setStatus('error','Có lỗi xác nhận'); setRunning(false); showError(err.message||String(err)); addLocalLog('✗ '+(err.message||err),'err');
+      }).confirmOwnershipTransfer();
+    }
+
+    function handlePauseOrContinue(){
+      var btn=document.getElementById('btnPause');
+      if(btn.dataset.mode==='continue'){handleContinue();return}
+      handlePause();
+    }
+
+    function handlePause(){
+      if(!isRunning)return;
+      setActionInFlight(true,'btnPause'); setRunning(false); setStatus('paused','Đang lưu checkpoint...'); stopPolling();
+      if(resumeTimer){clearTimeout(resumeTimer);resumeTimer=null}
+      addLocalLog('⏸ Đang yêu cầu ngưng tại checkpoint...','warn');
+      google.script.run.withSuccessHandler(function(){addLocalLog('⏸ Đã gửi yêu cầu ngưng. Đợi checkpoint cập nhật trong log.','warn');startPolling();})
+        .withFailureHandler(function(err){setActionInFlight(false);showError(err.message||String(err));addLocalLog('✗ '+(err.message||err),'err')})
+        .pauseOwnershipTransfer(activeJobId);
+    }
+
+    function handleContinue(){
+      showError(''); setActionInFlight(true,'btnPause'); setCheckpointContinueReady(false); setRunning(true); setConfirmReady(false); setStatus('starting','Đang tiếp tục...'); addLocalLog('▶ Tiếp tục từ checkpoint...','sep');
+      google.script.run.withSuccessHandler(function(res){
+        if(res&&res.pauseRequested){setStatus('paused','Đang chờ checkpoint hoàn tất...');startPolling();return}
+        if(res&&res.notReady){setActionInFlight(false);setStatus('paused','Checkpoint chưa sẵn sàng để tiếp tục');startPolling();return}
+        setActionInFlight(false); if(res&&res.jobId)activeJobId=res.jobId; startPolling(); if(res&&res.alreadyRunning)poll(); else kickWorker();
+      }).withFailureHandler(function(err){
+        setActionInFlight(false); setStatus('error','Có lỗi tiếp tục'); setRunning(false); showError(err.message||String(err)); addLocalLog('✗ '+(err.message||err),'err');
+      }).continueScanOnly();
+    }
+
+    function handleReset(){
+      if(isRunning)return;
+      showError(''); setActionInFlight(true,'btnReset'); if(resumeTimer){clearTimeout(resumeTimer);resumeTimer=null}
+      workerInFlight=false; pollInFlight=false; stopPolling(); setStatus('starting','Đang reset...');
+      google.script.run.withSuccessHandler(function(){
+        setActionInFlight(false); clearLog(); lastProgressUpdatedAt=''; activeJobId=''; updateStats({}); setStatus('idle','Đã xóa checkpoint'); setRunning(false); setConfirmReady(false); setCheckpointContinueReady(false);
+        document.getElementById('newOwnerEmail').value=''; document.getElementById('folderId').value='';
+      }).withFailureHandler(function(err){
+        setActionInFlight(false); setStatus('error','Có lỗi reset'); setRunning(false); showError(err.message||String(err)); addLocalLog('✗ '+(err.message||err),'err');
+      }).clearOwnershipTransferCheckpoint();
+    }
+
+    function startPolling(){stopPolling();poll();pollTimer=setInterval(poll,1000)}
+    function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null}}
+    function poll(){if(pollInFlight)return;pollInFlight=true;google.script.run.withSuccessHandler(function(p){pollInFlight=false;onProgress(p)}).withFailureHandler(function(){pollInFlight=false}).getOwnershipTransferProgress()}
+
+    function onProgress(p){
+      if(activeJobId&&p.jobId&&p.jobId!==activeJobId)return;
+      if(!activeJobId&&p.jobId&&p.status!=='idle')activeJobId=p.jobId;
+      if(p.updatedAt&&lastProgressUpdatedAt&&p.updatedAt<lastProgressUpdatedAt)return;
+      if(p.updatedAt)lastProgressUpdatedAt=p.updatedAt;
+      updateStats(p.stats||{}); appendNewLogs(p.logs||[],p.logOffset,p.logSeq); scheduleResumeIfNeeded(p);
+      var s=p.stats||{}, pass=p.pass>1?' · lần '+p.pass:'', scanned=fmt(s.scanned), eligible=fmt(s.eligible), requested=fmt(s.requested), transferred=fmt(s.transferred);
+      if(p.status==='scanning'){if(actionInFlight&&loadingButtonId==='btnStart')setActionInFlight(false);setRunning(true);setPauseButtonMode('pause',true);setStatus('running','Đã quét '+scanned+' mục · có thể xử lý '+eligible+pass);setConfirmReady(false);setCheckpointContinueReady(false)}
+      else if(p.status==='pause_requested'){setRunning(true);setPauseButtonMode('pause',true);setStatus('paused','Đã gửi yêu cầu ngưng · đang chờ checkpoint an toàn');setConfirmReady(false);setCheckpointContinueReady(false)}
+      else if(p.status==='awaiting_confirm'){if(actionInFlight&&loadingButtonId==='btnPause')setActionInFlight(false);workerInFlight=false;setStatus('confirm','Có '+fmt(p.pendingTransfer)+' mục chờ xác nhận');setRunning(false);setConfirmReady((s.eligible||0)>0);setCheckpointContinueReady(p.resumePhase==='scan');stopPolling()}
+      else if(p.status==='transferring'){if(actionInFlight&&loadingButtonId==='btnConfirm')setActionInFlight(false);setRunning(true);setPauseButtonMode('pause',true);setStatus('running','Đã xử lý '+fmt((s.requested||0)+(s.transferred||0))+'/'+fmt(s.eligible)+' mục'+pass);setConfirmReady(false);setCheckpointContinueReady(false)}
+      else if(p.status==='done'){workerInFlight=false;setStatus('done','Hoàn tất · đã yêu cầu '+requested+' · đã chuyển '+transferred+pass);setRunning(false);setConfirmReady(false);setCheckpointContinueReady(false);stopPolling()}
+      else if(p.status==='paused'){if(actionInFlight&&loadingButtonId==='btnPause')setActionInFlight(false);workerInFlight=false;setStatus('paused','Đã lưu checkpoint · bấm Tiếp tục để chạy tiếp');setRunning(false);setConfirmReady((s.eligible||0)>0);setCheckpointContinueReady(true);stopPolling()}
+      else if(p.status==='error'){workerInFlight=false;setStatus('error','Có lỗi xảy ra');setRunning(false);setConfirmReady(false);setCheckpointContinueReady(false);stopPolling()}
+      else if(p.status==='idle'){setCheckpointContinueReady(false);stopPolling()}
+    }
+
+    function kickWorker(){
+      if(workerInFlight)return; workerInFlight=true;
+      google.script.run.withSuccessHandler(function(res){
+        workerInFlight=false;
+        if(res&&res.busy){setStatus('running','Đang chờ lượt chạy trước kết thúc...'); if(!resumeTimer)resumeTimer=setTimeout(function(){resumeTimer=null;kickWorker()},5000); return}
+        poll();
+      }).withFailureHandler(function(err){
+        workerInFlight=false; setStatus('error','Có lỗi xử lý'); setRunning(false); stopPolling(); showError(err.message||String(err)); addLocalLog('✗ '+(err.message||err),'err'); poll();
+      }).continueOwnershipTransfer(activeJobId);
+    }
+
+    function scheduleResumeIfNeeded(p){
+      if(actionInFlight&&loadingButtonId==='btnPause')return;
+      if(!isRunning||!p||resumeTimer||workerInFlight)return;
+      if(p.status!=='scanning'&&p.status!=='transferring')return;
+      if(!p.waitingForResume)return;
+      setStatus('running','Đã checkpoint · sẽ tự chạy tiếp sau vài giây');
+      resumeTimer=setTimeout(function(){resumeTimer=null;addLocalLog('▶ UI gọi tiếp job từ checkpoint...','sep');kickWorker()},5000);
+    }
+
+    var STATUS_LABELS={idle:'Sẵn sàng',starting:'Đang khởi động...',running:'Đang chạy...',confirm:'Chờ xác nhận',done:'✅ Hoàn tất',error:'❌ Lỗi',paused:'⏸ Đã ngưng'};
+    function setStatus(status,sub){document.getElementById('statusDot').className='status-dot '+status;document.getElementById('statusText').textContent=STATUS_LABELS[status]||status;document.getElementById('statusSub').textContent=sub||''}
+    function setRunning(running,canPause){isRunning=running;if(running&&canPause!==false)setPauseButtonMode('pause',true);refreshControls()}
+    function setConfirmReady(ready){confirmReady=ready;refreshControls()}
+    function setCheckpointContinueReady(ready){checkpointContinueReady=ready;if(ready)setPauseButtonMode('continue',true);else if(!isRunning&&!actionInFlight)setPauseButtonMode('pause',false);refreshControls()}
+    function setPauseButtonMode(mode,enabled){var btn=document.getElementById('btnPause');btn.dataset.mode=mode;document.getElementById('pauseButtonText').textContent=mode==='continue'?'Tiếp tục':'Ngưng';btn.dataset.enabled=enabled?'true':'false';refreshControls()}
+    function setActionInFlight(inFlight,buttonId){actionInFlight=inFlight;loadingButtonId=inFlight?(buttonId||''):'';refreshControls()}
+    function refreshControls(){
+      ['btnStart','btnConfirm','btnPause','btnReset'].forEach(function(id){var b=document.getElementById(id); if(id===loadingButtonId)b.classList.add('loading');else b.classList.remove('loading')});
+      var pauseBtn=document.getElementById('btnPause'), pauseEnabled=pauseBtn.dataset.enabled==='true';
+      document.getElementById('btnStart').disabled=actionInFlight||isRunning||confirmReady;
+      document.getElementById('btnConfirm').disabled=actionInFlight||!confirmReady;
+      pauseBtn.disabled=actionInFlight||!pauseEnabled;
+      document.getElementById('btnReset').disabled=actionInFlight||isRunning;
+      document.getElementById('newOwnerEmail').disabled=actionInFlight||isRunning||confirmReady;
+      document.getElementById('folderId').disabled=actionInFlight||isRunning||confirmReady;
+      document.getElementById('directTransfer').disabled=actionInFlight||isRunning||confirmReady;
+    }
+    function updateStats(stats){
+      var s=stats||{}; setText('statScanned',fmt(s.scanned)); setText('statOwned',fmt(s.owned)); setText('statEligible',fmt(s.eligible)); setText('statPending',fmt(s.pending)); setText('statRequested',fmt(s.requested)); setText('statFailed',fmt(s.failed));
+      toggleCard('cardScanned',s.scanned>0);toggleCard('cardOwned',s.owned>0);toggleCard('cardEligible',s.eligible>0);toggleCard('cardPending',s.pending>0);toggleCard('cardRequested',s.requested>0);toggleCard('cardFailed',s.failed>0);
+    }
+    function setText(id,text){document.getElementById(id).textContent=text}
+    function toggleCard(id,active){var el=document.getElementById(id); if(active)el.classList.add('active');else el.classList.remove('active')}
+    function fmt(n){return(n||0).toLocaleString('vi')}
+    function showError(msg){var b=document.getElementById('errorBanner');b.textContent=msg;b.style.display=msg?'block':'none'}
+    function appendNewLogs(lines,offset,seq){
+      if(!lines||!lines.length)return;
+      offset=Number(offset||0);
+      seq=Number(seq||offset+lines.length);
+      if(lastLogCursor<offset){
+        addLocalLog('… Log cũ đã được rút gọn; tiếp tục hiển thị từ checkpoint mới nhất.','warn');
+        lastLogCursor=offset;
+      }
+      var start=Math.max(0,lastLogCursor-offset),newLines=lines.slice(start);
+      if(!newLines.length&&seq===offset+lines.length&&lines.length>lastLogLen){
+        newLines=lines.slice(lastLogLen);
+      }
+      lastLogCursor=Math.max(lastLogCursor,offset+lines.length,seq);
+      lastLogLen=lines.length;
+      newLines.forEach(function(line){addLocalLog(line)});
+    }
+    function addLocalLog(text,cls){var box=document.getElementById('logBox'), empty=document.getElementById('logEmpty');if(empty)empty.remove();var el=document.createElement('span');el.className='log-line '+(cls||classifyLine(text));el.textContent='['+formatLogTime(new Date())+'] '+text+'\n';box.appendChild(el);if(autoScroll)box.scrollTop=box.scrollHeight}
+    function formatLogTime(d){return[pad2(d.getHours()),pad2(d.getMinutes()),pad2(d.getSeconds())].join(':')}function pad2(n){return String(n).padStart(2,'0')}
+    function classifyLine(line){if(!line)return'system';if(line.indexOf('CO THE CHUYEN')!==-1)return'eligible';if(line.indexOf('DA GUI YEU CAU')!==-1)return'ok';if(line.startsWith('✓'))return'ok';if(line.startsWith('✗'))return'err';if(line.startsWith('⚠'))return'warn';if(line.indexOf('QUET XONG')!==-1||line.indexOf('HOAN TAT')!==-1||line.startsWith('✅'))return'done';if(line.indexOf('Dang quet folder')!==-1)return'scan';if(line.startsWith('⏸')||line.startsWith('▶')||line.startsWith('---'))return'sep';return'system'}
+    function clearLog(){document.getElementById('logBox').innerHTML='<div class="log-empty" id="logEmpty"><span>↪</span>Nhập cấu hình ← và bấm Quét owner</div>';lastLogLen=0;lastLogCursor=0}
+    function toggleAutoScroll(){autoScroll=!autoScroll;var btn=document.getElementById('btnAutoScroll');btn.textContent=autoScroll?'↓ Auto-scroll':'⏸ Auto-scroll';btn.style.color=autoScroll?'':'var(--warning)'}
+  </script>
+</body>
+</html>
